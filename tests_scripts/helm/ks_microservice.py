@@ -84,6 +84,8 @@ class ScanWithKubescapeAsServiceTest(BaseHelm, BaseKubescape):
         # 2.3 verify installation
         self.verify_running_pods(namespace=statics.CA_NAMESPACE_FROM_HELM_NAME, timeout=240)
 
+        self.verify_a_connected_cluster_state_in_backend(self.kubernetes_obj.context['name'], timeout=300)
+
         self.test_scan_jobs(port=statics.KS_PORT_FORWARD)
 
         Logger.logger.info("Deleting cluster from backend")

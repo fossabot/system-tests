@@ -634,6 +634,37 @@ class BaseK8S(BaseDockerizeTest):
         raise Exception("wrong number of pods are running after {} seconds. expected: {}, running: {}"
                         .format(timeout, replicas, len(running_pods)))  # , len(total_pods)))
 
+    def verify_a_connected_cluster_state_in_backend(self, cluster_name, timeout):
+        any_connected = False
+        cluster = None
+        request_interval_sec = 10
+        retries = int(timeout / request_interval_sec)
+        
+        while not cluster and retries > 0:
+            result = self.backend.get_connected_clusters_state()
+            if result['anyConnected']:
+                any_connected = True
+                cluster = next((c for c in result['clusters'] if c['connected'] and c['cluster']['name'] == cluster_name), None)
+            retries -= 1
+            time.sleep(request_interval_sec)
+
+        assert any_connected, f"expected to find connected clusters but found none."
+        assert cluster, f"expected to find cluster '{cluster_name}' in a connected state"
+        assert not cluster['hasErrors'], f"connected cluster '{cluster_name}' has errors. response: {json.dumps(cluster)}"
+        assert 'Running' in cluster['statusToPods'], f"connected cluster '{cluster_name}' has no running pods. response: {json.dumps(cluster)}"
+
+        expected_running_pods = [
+            statics.KUBESCAPE_COMPONENT_NAME,
+            statics.OPERATOR_COMPONENT_NAME,
+            statics.KUBEVULN_COMPONENT_NAME,
+            statics.KOLLECTOR_COMPONENT_NAME,
+            statics.GATEWAY_COMPONENT_NAME
+        ]
+
+        for expected_running_pod in expected_running_pods:
+            found_pod = next((p for p in cluster['statusToPods']['Running'] if expected_running_pod in p), None)
+            assert found_pod, f"connected cluster '{cluster_name}' has no running pod with name '{expected_running_pod}' (Response: {json.dumps(cluster['statusToPods'])})"
+
     def is_namespace_running(self, namespace):
         for ns in self.kubernetes_obj.client_CoreV1Api.list_namespace().items:
             if namespace in ns.metadata.name:

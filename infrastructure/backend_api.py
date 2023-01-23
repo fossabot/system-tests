@@ -1573,6 +1573,14 @@ class ControlPanelAPI(object):
                     self.customer, r.status_code, r.text))
         return r
 
+    def get_connected_clusters_state(self):
+        r = self.get("/api/v1/customerState/connectedClusters", params={"customerGUID": self.customer_guid})
+        if not 200 <= r.status_code < 300:
+            raise Exception(
+                'Error accessing dashboard. Request customerState/connectedClusters (customer: "%s", code: %d, message: %s)' % (
+                    self.customer, r.status_code, r.text))
+        return r.json()
+
 
 class Solution(object):
     """docstring for Solution"""

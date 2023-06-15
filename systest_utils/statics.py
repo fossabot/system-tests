@@ -171,7 +171,6 @@ TEST_REGISTRY_CONNECTIVITY_RETRIEVE_REPOSITORIES_STATUS = "retrieveRepositories"
 
 #storage aggregated API
 HELM_STORAGE_FEATURE="kubescapeStorage.enabled"
-HELM_RELEVANCY_FEATURE="nodeAgent.enabled"
 STORAGE_SBOM_PLURAL = "sbomspdxv2p3s"
 STORAGE_FILTERED_SBOM_PLURAL = "sbomspdxv2p3filtereds"
 STORAGE_CVES_PLURAL = "vulnerabilitymanifests"

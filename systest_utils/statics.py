@@ -189,7 +189,7 @@ RELEVANCY_CONTAINER_LABEL = "kubescape.io/workload-container-name"
 
 
 #relevancy feature
-HELM_RELEVANCY_FEATURE="nodeAgent.enabled"
+HELM_RELEVANCY_FEATURE="capabilities.relevancy"
 HELM_MAX_IMAGE_SIZE = "kubevuln.config.maxImageSize" 
 HELM_SCAN_TIMEOUT = "kubevuln.config.scanTimeout"
 HELM_OFFLINE_VULN_DB="grypeOfflineDB.enabled"

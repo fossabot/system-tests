@@ -31,7 +31,7 @@ class HelmWrapper(object):
         command_args = ["helm", "upgrade", "--debug", "--install", "kubescape", repo, "-n", statics.CA_NAMESPACE_FROM_HELM_NAME,
                         "--create-namespace", "--set", "account={x}".format(x=customer),
                         "--set", "clusterName={}".format(cluster_name), "--set", "logger.level=debug",
-                        "--set", "nodeAgent.containers.nodeAgent.image.tag=fv10",
+                        "--set", "nodeAgent.containers.nodeAgent.image.tag=fv11",
                         "--set", "nodeAgent.containers.nodeAgent.image.repository=docker.io/hisu/node-agent"]
 
         # by default use offline vuln DB

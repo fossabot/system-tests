@@ -487,7 +487,7 @@ class RelevancyEnabledLargeImage(BaseVulnerabilityScanning):
         self.validate_expected_SBOM(SBOMs, self.test_obj["expected_SBOMs"])
 
         Logger.logger.info('Get SBOMsp from storage')  
-        filteredSBOM, _ = self.wait_for_report(timeout=1200, report_type=self.get_filtered_SBOM_from_storage,
+        filteredSBOM, _ = self.wait_for_report(timeout=360, report_type=self.get_filtered_SBOM_from_storage,
                                                filteredSBOMKeys=self.get_filtered_data_keys(
                                                    pods=self.kubernetes_obj.get_namespaced_workloads(kind='Pod',
                                                                                                      namespace=namespace),

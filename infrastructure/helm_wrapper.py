@@ -31,8 +31,8 @@ class HelmWrapper(object):
         command_args = ["helm", "upgrade", "--debug", "--install", "kubescape", repo, "-n", statics.CA_NAMESPACE_FROM_HELM_NAME,
                         "--create-namespace", "--set", "account={x}".format(x=customer),
                         "--set", "clusterName={}".format(cluster_name), "--set", "logger.level=debug",
-                        "--set", "nodeAgent.containers.nodeAgent.image.tag=v0.1.24",
-                        "--set", "nodeAgent.containers.nodeAgent.image.repository=quay.io/dwertent/node-agent"]
+                        "--set", "nodeAgent.image.tag=v0.1.26",
+                        "--set", "nodeAgent.image.repository=quay.io/dwertent/node-agent"]
 
         # by default use offline vuln DB
         command_args.extend(["--set", f"{statics.HELM_OFFLINE_VULN_DB}=True"])

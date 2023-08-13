@@ -80,16 +80,35 @@ class BaseKubescape(BaseK8S):
         self.artifacts = self.test_driver.kwargs.get("use_artifacts", None)
         self.policies = self.test_driver.kwargs.get("use_from", None)
         self.kubescape_exec = self.test_driver.kwargs.get("kubescape", None)
-        self.environment = '' if self.test_driver.backend_obj.get_name() == "production" else self.test_driver.backend_obj.get_name()
+        self.environment = '' if self.test_driver.backend_obj == None or self.test_driver.backend_obj.get_name() == "production" else self.test_driver.backend_obj.get_name()
         self.host_scan_yaml = self.test_driver.kwargs.get("host_scan_yaml", None)
         self.remove_cluster_from_backend = False
 
     def default_scan(self, **kwargs):
+        self.delete_kubescape_config_file(**kwargs)
         res_file = self.get_default_results_file()
         self.scan(output_format="json", output=res_file, **kwargs)
         return self.load_results(results_file=res_file)
 
+    def is_kubescape_config_file_exist(self):
+        return os.path.exists(self.get_kubescape_config_file())
+
+    def create_kubescape_config_file(self):
+        config_file_data = {
+            statics.CLOUD_API_URL_KEY: "any_value"
+        }
+        with open(file=self.get_kubescape_config_file(), mode="w") as outfile:
+            json.dump(config_file_data, outfile)
+
+    def default_config(self, **kwargs):
+        if self.is_kubescape_config_file_exist() == False:
+            self.create_kubescape_config_file()
+        res_file = self.get_default_results_file()
+        with open(res_file, "w") as f:
+            return self.config(stdout=f,**kwargs)
+
     def cleanup(self, **kwargs):
+        self.delete_kubescape_config_file(**kwargs)
         if self.remove_cluster_from_backend and not self.cluster_deleted:
             TestUtil.sleep(150, "Waiting for aggregation to end")
             self.cluster_deleted = self.delete_cluster_from_backend()
@@ -98,6 +117,9 @@ class BaseKubescape(BaseK8S):
 
     def get_default_results_file(self):
         return os.path.join(self.test_driver.temp_dir, "results.json")
+    
+    def get_kubescape_config_file(self):
+        return os.path.join(os.path.expanduser('~'), ".kubescape", "config.json")
 
     def download_control_input(self):
         output_file = os.path.join(self.test_driver.temp_dir, 'controls-inputs.json')
@@ -121,8 +143,8 @@ class BaseKubescape(BaseK8S):
         if self.environment == "dev" or self.environment == "development":
             command.extend(["--env", "dev"])
         if self.environment == "staging" or self.environment == "stage":
-            command.extend(["--env", "report-ks.eustage2.cyberarmorsoft.com,api-stage.armo.cloud,"
-                                     "armoui.eustage2.cyberarmorsoft.com,eggauth.eustage2.cyberarmorsoft.com"])
+            command.extend(["--env", "report-ks.eustage2.cyberarmorsoft.com,api-stage.armosec.io,"
+                                     "cloud-stage.armosec.io,eggauth-stage.armosec.io"])
 
         Logger.logger.info(" ".join(command))
         status_code, res = TestUtil.run_command(command_args=command, timeout=360,
@@ -130,6 +152,45 @@ class BaseKubescape(BaseK8S):
                                                 stdout=TestUtil.get_arg_from_dict(kwargs, "stdout", None))
         assert status_code == 0, res
         return res
+    
+    def delete_kubescape_config_file(self, **kwargs):
+        if self.kubescape_exec is None:
+            return "kubescape_exec not found"
+        command = [self.kubescape_exec, "config", "delete"]
+        status_code, res = TestUtil.run_command(command_args=command, timeout=360,
+                                                stderr=TestUtil.get_arg_from_dict(kwargs, "stderr", None),
+                                                stdout=TestUtil.get_arg_from_dict(kwargs, "stdout", None))
+        assert status_code == 0, res
+        return res
+
+    
+    def view_kubescape_config_file(self, **kwargs):
+        command = [self.kubescape_exec, "config", "view"]
+        status_code, res = TestUtil.run_command(command_args=command, timeout=360,
+                                                stderr=TestUtil.get_arg_from_dict(kwargs, "stderr", None),
+                                                stdout=TestUtil.get_arg_from_dict(kwargs, "stdout", None))
+        assert status_code == 0, res
+        return res
+
+    def config(self, **kwargs):
+        command = [self.kubescape_exec, "config"]
+        if "view" in kwargs:
+            command.append(kwargs["view"])
+        elif "set" in kwargs:
+            command.append(kwargs["set"])
+            command.append(kwargs["data"][0])
+            command.append(kwargs["data"][1])
+        elif "delete" in kwargs:
+            command.append(kwargs["delete"])
+
+        Logger.logger.info(" ".join(command))
+        status_code, res = TestUtil.run_command(command_args=command, timeout=360,
+                                                stderr=TestUtil.get_arg_from_dict(kwargs, "stderr", None),
+                                                stdout=TestUtil.get_arg_from_dict(kwargs, "stdout", None))
+        assert status_code == 0, res
+        return res
+
+
 
     def scan(self, policy_scope: str = None, policy_name: str = None, output_format: str = None, output: str = None,
              **kwargs):
@@ -152,6 +213,8 @@ class BaseKubescape(BaseK8S):
             command.extend(["--output", output])
         if "exceptions" in kwargs:
             command.extend(["--exceptions", kwargs['exceptions']])
+        if "keep_local" in kwargs:
+            command.append("--keep-local")
         if "submit" in kwargs:
             command.append("--submit")
             self.remove_cluster_from_backend = True
@@ -160,8 +223,8 @@ class BaseKubescape(BaseK8S):
             command.extend(["--account", self.backend.get_customer_guid()])
 
         if self.environment == "staging" or self.environment == "stage":
-            command.extend(["--env", "report-ks.eustage2.cyberarmorsoft.com,api-stage.armo.cloud,"
-                                     "armoui.eustage2.cyberarmorsoft.com,eggauth.eustage2.cyberarmorsoft.com"])
+            command.extend(["--env", "report-ks.eustage2.cyberarmorsoft.com,api-stage.armosec.io,"
+                                     "cloud-stage.armosec.io,eggauth-stage.armosec.io"])
 
         if self.environment == "dev" or self.environment == "development":
             command.extend(["--env", "dev"])
@@ -361,6 +424,14 @@ class BaseKubescape(BaseK8S):
     def load_results(results_file):
         with open(results_file, 'r') as f:
             res = json.loads(f.read())
+        Logger.logger.debug("results: {}".format(res))
+        return res
+
+    @staticmethod
+    def load_bytes_results(data, results_file):
+        with open(results_file, 'r') as f:
+            res = json.loads(data)
+        Logger.logger.debug("results: {}".format(res))
         return res
 
     @staticmethod
@@ -555,7 +626,7 @@ class BaseKubescape(BaseK8S):
                 # TODO - support list of controls
                 return control['ruleReports'][0]['ruleResponses']
 
-    def test_filed_controls_in_resource(self, cli_result: dict, be_resources: list, cluster: str, kind: str, name: str,
+    def test_failed_controls_in_resource(self, cli_result: dict, be_resources: list, cluster: str, kind: str, name: str,
                                         namespace: str, api_version: str):
         be_affected_controls = BaseKubescape.get_attributes_from_be_resources(be_resources=be_resources, kind=kind,
                                                                               cluster=cluster, name=name,
@@ -679,16 +750,9 @@ class BaseKubescape(BaseK8S):
                                                                                             scored=control['scored'])
 
     def test_resources_from_backend(self, cli_result: dict, be_resources: list):
-        # self.test_filed_controls_in_resource(cli_result=cli_result, be_resources=be_resources, kind='Pod',
-        #                                      cluster=self.kubernetes_obj.get_cluster_name(),
-        #                                      name='kube-controller-manager',
-        #                                      namespace='kube-system')
-        # self.test_filed_controls_in_resource(cli_result=cli_result, be_resources=be_resources, kind='Namespace',
-        #                                      cluster=self.kubernetes_obj.get_cluster_name(),
-        #                                      name='kube-system', namespace='')
         resources_obj = self.test_obj[("resources_for_test", [])]
-        for resource_obj in self.test_obj[("resources_for_test", [])]:
-            self.test_filed_controls_in_resource(cli_result=cli_result, be_resources=be_resources,
+        for resource_obj in resources_obj:
+            self.test_failed_controls_in_resource(cli_result=cli_result, be_resources=be_resources,
                                                  kind=resource_obj['kind'], api_version=resource_obj['apiVersion'],
                                                  cluster=self.kubernetes_obj.get_cluster_name(),
                                                  name=resource_obj['name'], namespace=resource_obj['namespace'])
@@ -734,10 +798,12 @@ class BaseKubescape(BaseK8S):
         report_guid = self.get_report_guid(cluster_name=cluster_name, framework_name=framework_name,
                                            old_report_guid=old_report_guid)
 
-        self.test_api_version_info()
-
-        self.compare_top_controls_data(cli_result=cli_result, cluster_name=cluster_name, report_guid=report_guid,
-                                       framework_name=framework_name)
+        # "security" framework is excluded from postureClusters report, therefore skipping tests using APIS that depends on this report.
+        if framework_name not in statics.SECURITY_FRAMEWORKS:
+            self.test_api_version_info()
+            self.compare_top_controls_data(cli_result=cli_result, cluster_name=cluster_name, report_guid=report_guid,
+                                        framework_name=framework_name)
+            
         # self.compare_framework_data(cli_result, framework_name, report_guid)
         self.compare_controls_data(cli_result, framework_name, report_guid)
         self.compare_resources_data(cli_result, framework_name, report_guid)
@@ -758,9 +824,9 @@ class BaseKubescape(BaseK8S):
             x1=control['previousFailedResourcesCount'], x2=control['failedResourcesCount']
         )
 
-    def get_report_guid_and_timestamp_for_git_repository(self, git_repository: GitRepository, old_report_guid: str = "",
+    def get_report_guid_and_repo_hash_for_git_repository(self, git_repository: GitRepository, old_report_guid: str = "",
                                                          wait_to_result: bool = False) -> Tuple[
-        Optional[str], Optional[datetime]]:
+        Optional[str], Optional[str]]:
         check_intervals = 30
         sleep_sec = 12
 
@@ -776,7 +842,7 @@ class BaseKubescape(BaseK8S):
             scan = next((scan for scan in repository_scans if scan[statics.BE_REPORT_GUID_FIELD] != old_report_guid),
                         None)
             if scan:
-                return scan[statics.BE_REPORT_GUID_FIELD], parser.parse(scan[statics.BE_REPORT_TIMESTAMP_FIELD])
+                return scan[statics.BE_REPORT_GUID_FIELD], scan['designators']['attributes']['repoHash']
             elif not wait_to_result:
                 return None, None
             time.sleep(sleep_sec)
@@ -1006,6 +1072,14 @@ class BaseKubescape(BaseK8S):
     def test_backend_vs_kubescape_result(self, report_guid, kubescape_result):
         be_frameworks = self.get_posture_frameworks(report_guid=report_guid)
 
+        # check if there are also security fw scanned for report_guid
+        if self.enable_security:
+            for sf in statics.SECURITY_FRAMEWORKS:
+                be_current_security_framework = self.get_posture_frameworks(report_guid=report_guid, framework_name=sf)
+                if be_current_security_framework:
+                    Logger.logger.debug(f"test_backend_vs_kubescape_result - found security framework: {sf} in backend")
+                    be_frameworks.extend(be_current_security_framework)
+
         assert _CLI_SUMMARY_DETAILS_FIELD in kubescape_result, "expected key {} is not in kubescape result,kubescape_result: {}".format(
             _CLI_SUMMARY_DETAILS_FIELD, kubescape_result)
         kbs_r = kubescape_result[_CLI_SUMMARY_DETAILS_FIELD]
@@ -1022,22 +1096,28 @@ class BaseKubescape(BaseK8S):
     def get_report_guid(self, cluster_name: str, framework_name: str = "", old_report_guid: str = "",
                         wait_to_result: bool = False):
         found = False
+        Logger.logger.info("cluster_name: {}, framework_name: {}, old_report_guid: {}, wait_to_result: {}".format(
+            cluster_name, framework_name, old_report_guid, wait_to_result))
         for i in range(25):
             be_cluster_overtime = self.get_posture_clusters_overtime(cluster_name=cluster_name,
                                                                      framework_name=framework_name)
-            if wait_to_result and len(be_cluster_overtime) == 0:
+            if not wait_to_result and len(be_cluster_overtime) == 0:
                 return ""
             if len(be_cluster_overtime) > 0 and (old_report_guid == "" or
                                                  be_cluster_overtime[statics.BE_CORDS_FIELD][
                                                      statics.BE_REPORT_GUID_FIELD] != old_report_guid):
                 if found:
+                    Logger.logger.info("get_report_guid - returning found report_guid: {}".format(
+                        be_cluster_overtime[statics.BE_CORDS_FIELD][statics.BE_REPORT_GUID_FIELD]))
                     return be_cluster_overtime[statics.BE_CORDS_FIELD][statics.BE_REPORT_GUID_FIELD]
+                Logger.logger.info("get_report_guid - found report_guid: {}".format(
+                        be_cluster_overtime[statics.BE_CORDS_FIELD][statics.BE_REPORT_GUID_FIELD]))
                 found = True
                 # results where found, this means the backend started the aggregation, we will wait a little for the backend to complete the aggregation
                 time.sleep(20)
 
             time.sleep(5)
-        raise Exception('Failed to get the report-guid from the last scan.')
+        raise Exception('Failed to get the report-guid for the last scan.')
     
     def test_controls_compliance_score(self, report: dict):
         # for each control check that compliance score is the percentage of passed resources/total resources

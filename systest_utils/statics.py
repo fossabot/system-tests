@@ -1,5 +1,10 @@
 import os
 
+
+SECURITY_FRAMEWORKS = ["security"]
+SECURITY_FRAMEWORK_TYPETAG = "security"
+
+
 SUCCESS = True
 FAILURE = False
 
@@ -40,6 +45,12 @@ DEFAULT_CONFIGMAP_PATH = os.path.join(DEFAULT_K8S_PATHS, 'config-map')
 # kubescape
 DEFAULT_EXCEPTIONS_PATH = os.path.join(RESOURCES_PATH, 'kubescape', 'exceptions')
 DEFAULT_INPUT_YAML_PATH = os.path.join(RESOURCES_PATH, 'kubescape', 'yaml_file')
+# kubescape config
+ACCOUNT_ID_KEY="accountID"
+CLOUD_REPORT_URL_KEY="cloudReportURL"
+CLOUD_API_URL_KEY="cloudAPIURL"
+CLOUD_UI_URL_KEY="cloudUIURL"
+CLOUD_AUTH_URL_KEY="cloudAuthURL"
 
 # vulnerability_scanning paths
 DEFAULT_VULNERABILITY_SCANNING_PATHS = os.path.abspath(os.path.join('configurations', 'vulnerability_scanning'))
@@ -96,9 +107,11 @@ K8S_API_SERVER_CONTAINER_NAME = "kube-apiserver"
 KS_PORT_FORWARD = 33334
 
 # kubernetes cluster - armo-system
-HELM_REPO = "charts/kubescape-cloud-operator"
+HELM_REPO_FROM_LOCAL = "charts/kubescape-cloud-operator"
+HELM_REPO = "kubescape/kubescape-cloud-operator"
 CA_NAMESPACE_NAME = "kubescape"
 CA_NAMESPACE_FROM_HELM_NAME = "kubescape"
+CA_KUBESCAPE_CONFIGMAP_NAME = "kubescape-config"
 CA_HELM_NAME = "kubescape"
 CA_CONFIG = "ks-cloud-config"
 CA_OPERATOR_CONTAINER_FROM_HELM_NAME = "operator"
@@ -154,6 +167,7 @@ KUBEVULN_COMPONENT_NAME = 'kubevuln'
 KOLLECTOR_COMPONENT_NAME = 'kollector'
 GATEWAY_COMPONENT_NAME = 'gateway'
 STORAGE_COMPONENT_NAME = 'storage'
+NODE_AGENT_COMPONENT_NAME = 'nodeAgent'
 
 KUBESCAPE_COMPONENT_TAG = 'kubescape-tag'
 OPERATOR_COMPONENT_TAG = 'operator-tag'
@@ -161,6 +175,7 @@ KUBEVULN_COMPONENT_TAG = 'kubevuln-tag'
 KOLLECTOR_COMPONENT_TAG = 'kollector-tag'
 GATEWAY_COMPONENT_TAG = 'gateway-tag'
 STORAGE_COMPONENT_TAG = 'storage-tag'
+NODE_AGENT_COMPONENT_TAG = 'node-agent-tag'
 
 TEST_REGISTRY_CONNECTIVITY_PASSED_STATUS = "Passed"
 TEST_REGISTRY_CONNECTIVITY_FAILED_STATUS = "Failed"
@@ -188,6 +203,9 @@ RELEVANCY_KIND_LABEL = "kubescape.io/workload-kind"
 RELEVANCY_NAME_LABEL = "kubescape.io/workload-name"
 RELEVANCY_NAMESPACE_LABEL = "kubescape.io/workload-namespace"
 RELEVANCY_CONTAINER_LABEL = "kubescape.io/workload-container-name"
+RELEVANCY_INSTANCE_ID_LABEL = "kubescape.io/instance-id"
+RELEVANCY_WLID_ANNOTATION = "kubescape.io/wlid"
+
 
 # relevancy feature
 HELM_RELEVANCY_FEATURE = "capabilities.relevancy"
@@ -209,6 +227,8 @@ HELM_STORAGE_LIMITS_CPU = "storage.resources.limits.cpu"
 HELM_STORAGE_REQ_MEMORY = "storage.resources.requests.memory"
 HELM_STORAGE_LIMITS_MEMORY = "storage.resources.limits.memory"
 
+# cli arguments
+CREATE_TEST_FIRST_TIME_RESULTS = "create_first_time_results"
 
 class Statistics(object):
     clear_state = "clear"

@@ -25,7 +25,7 @@ def input_parser():
 
     parser.add_argument("-t", "--test-name", default="", action="store", required=False, dest="test_name",
                         help="test to run (all is the default.")
-    parser.add_argument("-b", "--backend", default="development", help="backend to run on.", action="store",
+    parser.add_argument("-b", "--backend", default="", help="backend to run on.", action="store",
                         dest="backend")
     parser.add_argument("-c", "--customer", default="CyberArmorTests", help="Customer name", dest="customer")
     parser.add_argument("--logger", choices=["DEBUG", "INFO", "WARNING", "ERROR"], help="logger level", default="DEBUG",
@@ -62,8 +62,11 @@ def input_parser():
                         help="leave cyberarmor namespace after running a k8s test, default if false")
     parser.add_argument("-temp", "--temp-dir", action="store", default=os.path.abspath("temp"),
                         help="temp dir location. default: ./temp", required=False)
+    parser.add_argument("--create-first-time-results", action="store_true", default=False,
+                        help="will create first time results", required=False, dest="create_first_time_results")
     parser.add_argument("--kwargs", action="store", required=False, nargs='*', dest='kwargs',
                         help="adding additional values. example: --kwargs k0=v0 k1=v1;v11")
+    
 
     return parser.parse_args()
 
@@ -107,7 +110,7 @@ def main():
         print_configurations(args.list)
         exit(0)
 
-    if args.backend not in BACKENDS or args.test_name not in ALL_TESTS or args.customer != CREDENTIALS.customer:
+    if args.test_name not in ALL_TESTS or args.customer != CREDENTIALS.customer:
         print_configurations()
         exit(1)
 

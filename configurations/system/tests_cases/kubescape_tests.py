@@ -1,7 +1,9 @@
+import os
 import inspect
 from configurations.system.git_repository import GitRepository
+from .structures import TestConfiguration
 
-# from systest_utils.statics import DEFAULT_DEPLOYMENT_PATH
+from systest_utils.statics import DEFAULT_KS_CUSTOM_FW_PATH
 from .structures import KubescapeConfiguration
 
 
@@ -14,7 +16,7 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=Scan,
             policy_scope='framework',
-            policy_name='nsa'
+            policy_name='NSA'
         )
 
     @staticmethod
@@ -24,7 +26,17 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=Scan,
             policy_scope='framework',
-            policy_name='mitre'
+            policy_name='MITRE'
+        )
+    
+    @staticmethod
+    def scan_security():
+        from tests_scripts.kubescape.scan import Scan
+        return KubescapeConfiguration(
+            name=inspect.currentframe().f_code.co_name,
+            test_obj=Scan,
+            policy_scope='framework',
+            policy_name='security'
         )
 
     @staticmethod
@@ -34,7 +46,7 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=ScanWithExceptions,
             policy_scope='framework',
-            policy_name='mitre',
+            policy_name='MITRE',
             exceptions='kube-ns.json',
             controls_tested=["C-0002"]
         )
@@ -58,7 +70,7 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=ScanUrl,
             policy_scope='framework',
-            policy_name='mitre',
+            policy_name='MITRE',
             url="https://github.com/armosec/kubescape"
         )
 
@@ -78,7 +90,8 @@ class KubescapeTests(object):
                 "examples/helm_chart/templates/serviceaccount.yaml",
                 "examples/helm_chart/templates/cronjob.yaml"
             ],
-            clone_before=False
+            clone_before=False,
+            create_test_tenant=True
         )
 
     @staticmethod
@@ -88,12 +101,13 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=ScanGitRepositoryAndSubmit,
             policy_scope='framework',
-            policy_name='mitre',
+            policy_name='MITRE',
             submit=True,
             account=True,
             git_repository=GitRepository(name='examples', owner="kubernetes", branch="master",
                                          url="https://github.com/kubernetes/examples"),
-            clone_before=True
+            clone_before=True,
+            create_test_tenant=True
         )
 
     @staticmethod
@@ -103,7 +117,7 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=ScanLocalFile,
             policy_scope='framework',
-            policy_name='nsa',
+            policy_name='NSA',
             yamls=['nginx.yaml'],
             resources=1
         )
@@ -115,7 +129,7 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=ScanLocalFile,
             policy_scope='framework',
-            policy_name='nsa',
+            policy_name='NSA',
             yamls=['hipster_shop/*.yaml'],
             resources=13
         )
@@ -139,12 +153,28 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=ScanAndSubmitToBackend,
             policy_scope='framework',
-            policy_name='nsa',
+            policy_name='NSA',
             submit=True,
             account=True,
             resources_for_test=[
                 {'kind': 'Deployment', 'name': 'apache', 'namespace': 'system-test', 'apiVersion': 'apps/v1'},
                 {'kind': 'Namespace', 'name': 'system-test', 'namespace': '', 'apiVersion': 'v1'}],
+            yaml="apache.yaml",
+            namespace="system-test"
+        )
+    
+    @staticmethod
+    def scan_security_and_submit_to_backend():
+        from tests_scripts.kubescape.scan import ScanAndSubmitToBackend
+        return KubescapeConfiguration(
+            name=inspect.currentframe().f_code.co_name,
+            test_obj=ScanAndSubmitToBackend,
+            policy_scope='framework',
+            policy_name='security',
+            submit=True,
+            account=True,
+            resources_for_test=[
+                {'kind': 'Deployment', 'name': 'apache', 'namespace': 'system-test', 'apiVersion': 'apps/v1'}],
             yaml="apache.yaml",
             namespace="system-test"
         )
@@ -156,7 +186,7 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=ScanAndSubmitToBackend,
             policy_scope='framework',
-            policy_name='mitre',
+            policy_name='MITRE',
             submit=True,
             account=True,
             resources_for_test=[
@@ -173,7 +203,7 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=ScanWithExceptionToBackend,
             policy_scope='framework',
-            policy_name='nsa',
+            policy_name='NSA',
             submit=True,
             account=True,
             exceptions="exclude-control-apache.json,exclude-control-sa-resourceID-apache.json",
@@ -214,7 +244,7 @@ class KubescapeTests(object):
             name=inspect.currentframe().f_code.co_name,
             test_obj=OfflineSupport,
             policy_scope='framework',
-            policy_name='nsa',
+            policy_name='NSA',
             yaml=["apache.yaml"],
             namespace="system-test",
             expected_results='apache.json'
@@ -242,4 +272,71 @@ class KubescapeTests(object):
             policy_name='C-0052,C-0069,C-0070,C-0092,C-0093,C-0094,C-0095,C-0096,C-0097,C-0098,C-0099,C-0100',
             submit=False,
             account=False,
+        )
+
+    @staticmethod
+    def unified_configuration_config_view():
+        from tests_scripts.kubescape.config import ConfigView
+        return TestConfiguration(
+            name=inspect.currentframe().f_code.co_name,
+            test_obj=ConfigView,
+        )
+    
+    @staticmethod
+    def unified_configuration_config_set():
+        from tests_scripts.kubescape.config import ConfigSet
+        return TestConfiguration(
+            name=inspect.currentframe().f_code.co_name,
+            test_obj=ConfigSet,
+            set_key="secretKey",
+            set_value="123",
+        )
+    
+    @staticmethod
+    def unified_configuration_config_delete():
+        from tests_scripts.kubescape.config import ConfigDelete
+        return TestConfiguration(
+            name=inspect.currentframe().f_code.co_name,
+            test_obj=ConfigDelete,
+        )
+    
+    @staticmethod
+    def scan_custom_framework_scanning_cluster_scope_testing():
+        from tests_scripts.kubescape.scan import TestScanningScope
+        return KubescapeConfiguration(
+            name=inspect.currentframe().f_code.co_name,
+            test_obj=TestScanningScope,
+            policy_scope='framework',
+            keep_local=True,
+            framework_file=os.path.abspath(os.path.join(DEFAULT_KS_CUSTOM_FW_PATH, "system-test-framework-scanning-scope.json")),
+            policy_name="systest-fw-custom-scanning-scope-cluster-only",
+            scope_control_counter=5,
+        )
+    
+    @staticmethod
+    def scan_custom_framework_scanning_file_scope_testing():
+        from tests_scripts.kubescape.scan import TestScanningFileScope
+        return KubescapeConfiguration(
+            name=inspect.currentframe().f_code.co_name,
+            test_obj=TestScanningFileScope,
+            policy_scope='framework',
+            keep_local=True,
+            yamls=['nginx.yaml'],
+            framework_file=os.path.abspath(os.path.join(DEFAULT_KS_CUSTOM_FW_PATH, "system-test-framework-scanning-file-scope.json")),
+            policy_name="systest-fw-custom-scanning-scope-file",
+            scope_control_counter=5,
+        )
+    
+    @staticmethod
+    def scan_custom_framework_scanning_cluster_and_file_scope_testing():
+        from tests_scripts.kubescape.scan import TestScanningFileScope
+        return KubescapeConfiguration(
+            name=inspect.currentframe().f_code.co_name,
+            test_obj=TestScanningFileScope,
+            policy_scope='framework',
+            keep_local=True,
+            yamls=['nginx.yaml'],
+            framework_file=os.path.abspath(os.path.join(DEFAULT_KS_CUSTOM_FW_PATH, "system-test-framework-scanning-cluster-and-file-scope.json")),
+            policy_name="systest-fw-custom-scanning-scope-cluster-and-files",
+            scope_control_counter=5,
         )

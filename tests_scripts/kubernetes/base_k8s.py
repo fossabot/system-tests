@@ -196,8 +196,19 @@ class BaseK8S(BaseDockerizeTest):
             Logger.logger.error(e)
 
     def delete_cluster_from_backend(self, confirm_deletion: bool = True) -> bool:
+        if self.cluster_deleted:
+            Logger.logger.info("Cluster '{}' was confirmed as already deleted from backend".format(cluster_name))
+            return True
+        
         try:
             cluster_name = self.kubernetes_obj.get_cluster_name()
+            try:
+                self.backend.get_cluster(cluster_name=cluster_name, expected_status_code=200)
+            except Exception as ex:
+                if str(ex).find('received "404"') > -1:
+                    Logger.logger.info("Cluster '{}' was confirmed as already deleted from backend".format(cluster_name))
+                    return True
+                Logger.logger.info("Cluster '{}' wasn't confirmed as already deleted from backend. Error: {}".format(cluster_name, ex))
             Logger.logger.info("Deleting cluster '{}' from backend".format(cluster_name))
             self.backend.delete_cluster(cluster_name=cluster_name)
         except requests.ReadTimeout as e:
@@ -215,6 +226,7 @@ class BaseK8S(BaseDockerizeTest):
             
             Logger.logger.info("Cluster was deleted successfully '{}'".format(self.kubernetes_obj.get_cluster_name()))
         
+            self.cluster_deleted = True
         return True
 
     def apply_secret(self, **kwargs):

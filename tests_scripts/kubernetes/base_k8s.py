@@ -190,6 +190,7 @@ class BaseK8S(BaseDockerizeTest):
         try:
             Logger.logger.debug(f"namespace {namespace}")
             TestUtil.run_command(command_args=f"kubectl -n {namespace} get pods".split(" "))
+            TestUtil.run_command(command_args=f"kubectl -n {namespace} describe pods".split(" "))
             Logger.logger.debug("remove {} namespace".format(namespace))
             self.kubernetes_obj.delete_namespace(namespace=namespace)
         except Exception as e:

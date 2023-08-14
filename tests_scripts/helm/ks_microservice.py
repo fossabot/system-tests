@@ -203,7 +203,7 @@ class ScanWithKubescapeAsServiceTest(BaseHelm, BaseKubescape):
             Logger.logger.info("Get report-guid")
             report_guid = self.get_report_guid(cluster_name=cluster_name,
                                                old_report_guid=old_report_guid,
-                                               framework_name=framework_list[0])
+                                               framework_name=framework_list[0], wait_to_result=True)
 
             Logger.logger.info('get result from kubescape in cluster')
             kubescape_result = self.get_kubescape_as_server_last_result(cluster_name, port=port)

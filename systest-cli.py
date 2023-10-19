@@ -3,6 +3,7 @@ import argparse
 import base64
 import os
 import sys
+import json
 from datetime import datetime
 from logging import DEBUG, ERROR
 from random import seed
@@ -14,7 +15,10 @@ from configurations import BACKENDS, CREDENTIALS, ALL_TESTS
 from systest_utils import Logger, TestUtil
 from test_driver import TestDriver
 
-
+def get_available_tests_from_json(json_file="system_test_mapping.json"):
+    with open(json_file, 'r') as file:
+        tests_data = json.load(file)
+    return list(tests_data.keys())
 
 def input_parser():
     # get arguments
@@ -33,7 +37,7 @@ def input_parser():
 
     parser.add_argument("--delete_test_tenant", choices=["ALWAYS", "TEST_PASSED", "NEVER"], help="when to delete test tenant", default="ALWAYS",
                         dest="delete_test_tenant")
-    
+
     parser.add_argument("-f", "--fresh", action="store_true", dest="fresh", default=False,
                         help="refresh local docker images, build new ones (and remove the old ones).")
 
@@ -66,10 +70,17 @@ def input_parser():
                         help="will create first time results", required=False, dest="create_first_time_results")
     parser.add_argument("--kwargs", action="store", required=False, nargs='*', dest='kwargs',
                         help="adding additional values. example: --kwargs k0=v0 k1=v1;v11")
-    
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    json_filename = "system_test_mapping.json"
+    available_tests = get_available_tests_from_json(json_filename)
 
+    if args.test_name and args.test_name not in available_tests:
+        print(f"Error: Test '{args.test_name}' is not available. Please add it to the {json_filename} file or choose from the available tests.")
+        print_configurations(print_list="t")
+        sys.exit(1)
+
+    return args
 
 def print_configurations(print_list: str = "all"):
     import json
@@ -82,7 +93,6 @@ def print_configurations(print_list: str = "all"):
         p["Backends"] = list(BACKENDS.keys())
     print(json.dumps(p, indent=4))
 
-
 def setup_logger(level=DEBUG, name: str = ""):
     # set logger
     Logger.set_logger(logging_level=level, name=name)
@@ -93,7 +103,6 @@ def setup_logger(level=DEBUG, name: str = ""):
     std_handlers = TestUtil.set_stream_capture(logger_err_handler, logger_out_handler)
 
     Logger.logger.debug('Logger file location: {}'.format(Logger.get_file_location()))
-
 
 def main():
 
@@ -123,7 +132,6 @@ def main():
     res = t.main()
     Logger.logger.debug('Logger file location: {}'.format(Logger.get_file_location()))
     exit(res)
-
 
 if __name__ == "__main__":
     main()
